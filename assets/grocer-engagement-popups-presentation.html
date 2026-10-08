@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Grocer — new subscriber engagement pop-ups (wireframe)</title>
+
+<!-- ============================================================
+     FONTS
+     1. Adobe Fonts. Replace xxxxxxx with your kit ID from
+        fonts.adobe.com → My Kits → Web Projects. Add the domain
+        the wireframe is hosted on to the kit's allowed domains.
+     2. The Google Fonts line below is a PREVIEW-ONLY stand-in so
+        the wireframe looks right on hosts that block use.typekit.net.
+        Delete it once the kit is live.
+     ============================================================ -->
+<link rel="stylesheet" href="https://use.typekit.net/uch7msi.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;600;700&family=Archivo:wght@400;500;600;700&display=swap">
+
+<style>
+:root{
+  /* --- type ---------------------------------------------------
+     Adobe Fonts family names first, preview fallback second,
+     system stack last. Change the first name in each stack to
+     swap the typeface everywhere.                               */
+  --font-display:"unit-slab","adelle","Zilla Slab",Georgia,"Times New Roman",serif;
+  --font-ui:"unit","adelle-sans","Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --font-condensed:"acumin-pro-condensed","Archivo",Haettenschweiler,"Arial Narrow",sans-serif;
+
+  --chrome-bg:#eceae5;
+  --chrome-surface:#ffffff;
+  --chrome-ink:#1a1a1a;
+  --chrome-muted:#5f5f5f;
+  --chrome-line:#d5d2cb;
+
+  /* artwork tokens — the mocked site + popup stay light in both themes */
+  --paper:#ffffff;
+  --ink:#141414;
+  --muted:#6a6a6a;
+  --line:#dcdcdc;
+  --wire:#ececec;
+  --wire-2:#e0e0e0;
+  --brand-black:#000000;
+  --brand-yellow:#f6d000;
+  --ia-orange:#f47b20;
+  --radius:10px;
+  --masthead-h:0px; /* measured at runtime */
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --chrome-bg:#1b1b1d;
+    --chrome-surface:#252528;
+    --chrome-ink:#f2f2f0;
+    --chrome-muted:#a5a5a2;
+    --chrome-line:#3a3a3d;
+  }
+}
+:root[data-theme="dark"]{
+  --chrome-bg:#1b1b1d;
+  --chrome-surface:#252528;
+  --chrome-ink:#f2f2f0;
+  --chrome-muted:#a5a5a2;
+  --chrome-line:#3a3a3d;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--chrome-bg);
+  color:var(--chrome-ink);
+  font-family:var(--font-ui);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:none;margin:0;padding:0}
+
+/* ---------- stage: mocked site + popup ---------- */
+.stage{
+  position:relative;
+  overflow:hidden;
+  background:var(--paper);
+  height:100vh;
+  min-height:600px;
+}
+
+/* site mock */
+.site{position:absolute;inset:0;overflow:hidden;color:var(--ink)}
+.site__top{background:var(--brand-black);padding:14px 22px;display:flex;justify-content:space-between;align-items:center}
+.logo img{width:236px;}
+.logo small{display:block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-family:inherit;opacity:.9;line-height:1}
+.site__search{width:280px;height:26px;background:#3a3a3a;border-radius:2px}
+.site__nav{background:var(--brand-black);border-top:2px solid var(--brand-yellow);padding:9px 22px;display:flex;gap:18px}
+.site__nav span{color:#fff;font-size:12px;opacity:.85;font-family:var(--font-condensed);letter-spacing:.01em}
+.site__nav span:first-child{background:var(--brand-yellow);color:#000;padding:2px 9px;opacity:1;border-radius:2px}
+.site__body{padding:20px 22px;display:grid;grid-template-columns:1fr 1fr 280px;gap:16px;max-width:1220px;margin:auto;}
+.blk{background:var(--wire);border-radius:4px}
+.blk--h{height:14px;margin-bottom:8px}
+.blk--h.w60{width:60%}
+.blk--h.w80{width:80%}
+.blk--img{height:130px;margin-bottom:10px;background:var(--wire-2)}
+.blk--img.tall{height:190px}
+.site__rail .blk--h{height:11px}
+.site__rail .rail-item{padding:10px 0;border-bottom:1px solid var(--line)}
+
+/* scrim */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.62)}
+
+/* ---------- the pop-up ---------- */
+.modal{
+  position:absolute;
+  left:50%;
+  /* Centred in the space BELOW the masthead, not the whole viewport, so the
+     pop-up never sits over the header + nav in short windows.
+     --masthead-h is measured in JS and set on .stage.                      */
+  top:calc(50% + (var(--masthead-h) / 2));
+  transform:translate(-50%,-50%);
+  width:min(760px,calc(100% - 48px));
+  max-height:max(240px, calc(100% - var(--masthead-h) - 40px));
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:8px;
+  box-shadow:0 18px 50px rgba(0,0,0,.38);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.modal[hidden]{display:none}
+.modal__close{
+  position:absolute;right:12px;top:12px;z-index:3;
+  width:30px;height:30px;border-radius:5px;border:0;
+  background:#1c1c1c;color:#fff;font-size:15px;line-height:1;cursor:pointer;
+}
+.modal__close:hover{background:#000}
+/* Height is locked to the tallest of the seven efforts (measured in JS) so the
+   footer controls never move between slides. Falls back to auto before JS runs. */
+.modal__body{padding:30px 34px 22px;overflow:auto;flex:0 0 auto;min-height:0;height:var(--body-h,auto)}
+.modal__foot{
+  border-top:1px solid var(--line);
+  padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:var(--paper);
+}
+
+.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:700}
+.modal h2{font-size:27px;line-height:1.15;margin:0 0 10px;letter-spacing:-0.02em;font-family:var(--font-display);font-weight:700}
+.lede{font-size:15px;color:#333;margin:0 0 18px;max-width:58ch}
+.lede a{color:#000;text-decoration:underline;text-underline-offset:2px}
+
+/* footer furniture */
+.foot-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.linkbtn{
+  background:none;border:0;padding:0;font:inherit;font-size:12.5px;
+  color:var(--muted);text-decoration:underline;text-underline-offset:2px;cursor:pointer;
+}
+.linkbtn:hover{color:var(--ink)}
+.foot-right{display:flex;align-items:center;gap:8px}
+.navbtn{
+  font:inherit;font-size:12.5px;font-weight:600;
+  background:#1c1c1c;color:#fff;border:0;border-radius:4px;
+  padding:7px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+}
+.navbtn:hover{background:#000}
+.navbtn:disabled{background:#d6d6d6;color:#8e8e8e;cursor:default}
+.counter{font-size:12.5px;color:var(--muted);min-width:52px;text-align:center}
+.dots{display:flex;gap:5px;margin:0 4px}
+.dot{width:8px;height:8px;border-radius:50%;border:1px solid #9b9b9b;background:transparent;padding:0;cursor:pointer}
+.dot[aria-current="true"]{background:#1c1c1c;border-color:#1c1c1c}
+.dot.seen{background:#c2c2c2;border-color:#c2c2c2}
+
+/* reopen pill (recoverable dismiss) */
+.pill{
+  position:absolute;right:18px;bottom:18px;z-index:4;
+  background:#1c1c1c;color:#fff;border:0;border-radius:100px;
+  padding:10px 16px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,.3);display:flex;align-items:center;gap:8px;
+}
+.pill[hidden]{display:none}
+.pill .badge{background:var(--brand-yellow);color:#000;border-radius:100px;padding:1px 7px;font-size:11px}
+
+/* ---------- shared content furniture ---------- */
+.ph{
+  background:var(--wire);
+  border:1px dashed #c3c3c3;
+  border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  color:#8a8a8a;font-size:11px;text-align:center;padding:8px;
+  background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.035) 0 6px,transparent 6px 12px);
+}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:5px;overflow:hidden;background:#fff}
+.card:hover{border-color:#1c1c1c;box-shadow:0 4px 14px rgba(0,0,0,.1)}
+.card .ph{height:96px;border:0;border-bottom:1px solid var(--line);border-radius:0}
+.card__txt{padding:9px 10px 11px}
+.card__kicker{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ia-orange);font-weight:700;display:block;margin-bottom:4px}
+.card h3{font-size:14px;line-height:1.3;margin:0 0 6px;font-weight:700;font-family:var(--font-display)}
+.card time{font-size:11px;color:var(--muted)}
+.cta{
+  display:inline-block;background:var(--brand-yellow);color:#000;font-weight:700;font-size:13px;
+  padding:9px 16px;border-radius:4px;text-decoration:none;border:0;cursor:pointer;font-family:inherit;
+}
+.cta:hover{filter:brightness(.93)}
+.cta--dark{background:#1c1c1c;color:#fff}
+.cta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.flag{
+  margin-top:14px;font-size:11.5px;color:#8a5a00;background:#fff8e0;
+  border:1px solid #f0dda0;border-radius:4px;padding:7px 10px;
+}
+.two-col{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;align-items:start}
+@media (max-width:760px){.two-col{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
+
+/* effort 1 — iA demo */
+.ia-demo{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fafafa}
+.ia-bar{background:#1c1c1c;color:#fff;font-size:11px;padding:7px 12px;display:flex;align-items:center;gap:8px}
+.ia-mark{width:18px;height:18px;border-radius:50%;background:var(--ia-orange);display:grid;place-items:center;font-size:9px;font-weight:800;color:#fff}
+.ia-field{margin:14px;background:#fff;border:1px solid #d0d0d0;border-radius:4px;padding:11px 12px;font-size:13.5px;min-height:44px}
+.ia-label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 14px -6px;font-weight:700}
+.caret{display:inline-block;width:1px;height:1em;background:#111;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.ia-answer{margin:0 14px 14px;font-size:12.5px;color:#333}
+.ia-answer li{opacity:0;transform:translateY(4px);transition:opacity .35s,transform .35s;margin-bottom:6px}
+.ia-answer li.in{opacity:1;transform:none}
+.ia-answer ul{margin:0;padding-left:18px}
+
+/* effort 4 — app */
+.phones{display:flex;gap:10px}
+.phone{flex:1;aspect-ratio:9/17;border-radius:12px;border:1px solid #cfcfcf}
+.store-badges{display:flex;gap:10px;margin-top:12px}
+.store-badge{height:40px;width:132px;border-radius:5px;text-decoration:none;font-size:10.5px;color:#8a8a8a}
+
+/* video placeholder */
+.video{position:relative;aspect-ratio:16/9;border-radius:6px}
+.play{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.72);
+  display:grid;place-items:center;
+}
+.play::after{content:"";border-left:15px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:4px}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.thumbs .ph{height:58px}
+
+/* effort 5 — league table */
+.league{width:100%;border-collapse:collapse;font-size:12.5px}
+.league th,.league td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+.league th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.league tr:first-child td{font-weight:700}
+.g33{width:78px;height:78px;border-radius:50%;flex:0 0 auto}
+
+/* list rows for effort 7 */
+.rows{display:grid;gap:9px}
+.row{display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:5px;padding:9px;text-decoration:none;color:inherit}
+.row:hover{border-color:#1c1c1c}
+.row .ph{width:74px;height:46px;flex:0 0 auto}
+.row b{display:block;font-size:13px}
+.row span{font-size:11.5px;color:var(--muted)}
+
+.scroll-x{overflow-x:auto}
+@media (max-width:700px){
+  .modal{width:calc(100% - 20px);max-height:max(220px, calc(100% - var(--masthead-h) - 20px))}
+  .modal__body{padding:24px 18px 16px}
+  .modal h2{font-size:22px}
+  .site__body{grid-template-columns:1fr}
+  .foot-right{width:100%;justify-content:space-between}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="stage" id="stage">
+    <!-- mocked site behind -->
+    <div class="site" aria-hidden="true">
+      <div class="site__top">
+        <div class="logo">
+          <img src="https://dmrqkbkq8el9i.cloudfront.net/Pictures/web/z/r/k/grocer_logo_2012_white_rgb354px_656131.png">
+        </div>
+        <div class="site__search"></div>
+      </div>
+      <div class="site__nav">
+        <span>Home</span><span>Retail &amp; Wholesale</span><span>Products &amp; Suppliers</span>
+        <span>People</span><span>Reports &amp; Data</span><span>Topics A-Z</span><span>Events</span><span>Ask iA</span>
+      </div>
+      <div class="site__body">
+        <div>
+          <div class="blk blk--h w60"></div>
+          <div class="blk blk--img tall"></div>
+          <div class="blk blk--h"></div><div class="blk blk--h w80"></div>
+        </div>
+        <div>
+          <div class="blk blk--h w60"></div>
+          <div class="blk blk--img"></div>
+          <div class="blk blk--h"></div><div class="blk blk--h w80"></div>
+          <div class="blk blk--img" style="margin-top:14px"></div>
+        </div>
+        <div class="site__rail">
+          <div class="blk blk--h w60"></div>
+          <div class="rail-item"><div class="blk blk--h"></div><div class="blk blk--h w80"></div></div>
+          <div class="rail-item"><div class="blk blk--h"></div><div class="blk blk--h w60"></div></div>
+          <div class="rail-item"><div class="blk blk--h"></div><div class="blk blk--h w80"></div></div>
+          <div class="rail-item"><div class="blk blk--h"></div><div class="blk blk--h w60"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim" id="scrim"></div>
+
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal__close" id="close" aria-label="Close tips">✕</button>
+      <div class="modal__body" id="body"></div>
+      <div class="modal__foot">
+        <div class="foot-left">
+          <button class="linkbtn" id="snooze">Remind me tomorrow</button>
+          <button class="linkbtn" id="optout">Don't show me tips</button>
+        </div>
+        <div class="foot-right">
+          <div class="dots" id="dots" role="tablist" aria-label="Choose a tip"></div>
+          <button class="navbtn" id="prev">← Previous</button>
+          <span class="counter" id="counter" aria-live="polite">1 of 7</span>
+          <button class="navbtn" id="next">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="pill" id="pill" hidden>Membership tips <span class="badge" id="pill-count">7</span></button>
+  </div>
+
+</div>
+
+<script>
+let rssReports = null;
+
+/* Static fallback — used if all live fetches fail (e.g. CORS blocked in local preview).
+   Replace with fresher items whenever the presentation is refreshed. */
+const RSS_FALLBACK = [
+  { title:'All you need to know about deodorant (but were too shy to ask)',
+    link:'https://www.thegrocer.co.uk/reports-and-data/all-you-need-to-know-about-deodorant-but-were-too-shy-to-ask/716713.article',
+    date:'5 May 2026' },
+  { title:'In graphs: What Brits think of DRS in a cost of living crisis',
+    link:'https://www.thegrocer.co.uk/reports-and-data/in-graphs-what-brits-think-of-drs-in-a-cost-of-living-crisis/684031.article',
+    date:'6 October 2023' },
+  { title:'What would Labour do differently on HFSS?',
+    link:'https://www.thegrocer.co.uk/reports-and-data/what-would-labour-do-differently-on-hfss/683738.article',
+    date:'30 September 2023' }
+];
+
+function parseRSSText(text){
+  const xml = new DOMParser().parseFromString(text, 'text/xml');
+  const items = [...xml.getElementsByTagName('item')].slice(0, 3);
+  return items.map(item => {
+    const get = tag => item.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
+    const d = new Date(get('pubDate'));
+    return {
+      title: get('title'),
+      link: get('link') || '#',
+      date: isNaN(d) ? '' : d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'})
+    };
+  });
+}
+
+async function fetchCategoryReports(){
+  /* file:// gives a null origin that CORS proxies reject — skip straight to fallback */
+  if(location.protocol === 'file:') return RSS_FALLBACK;
+
+  const FEED = 'https://www.thegrocer.co.uk/35916.rss';
+  const PROXIES = [
+    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    url => 'https://corsproxy.io/?' + encodeURIComponent(url),
+  ];
+  for(const proxy of PROXIES){
+    try {
+      const res = await fetch(proxy(FEED));
+      if(!res.ok) continue;
+      const items = parseRSSText(await res.text());
+      if(items.length) return items;
+    } catch(e) { /* try next */ }
+  }
+  return RSS_FALLBACK;
+}
+
+function fillRSSCards(reports){
+  const c = document.getElementById('rss-cards');
+  if(!c || !reports || !reports.length) return;
+  c.innerHTML = reports.map(r => card('Category report', r.title, r.date, r.link)).join('');
+}
+
+const EFFORTS = [
+  {
+    n:1, tab:"1 · iA", title:"AI insights, instantly",
+    html:`
+      <p class="eyebrow">Tip 1 of 7</p>
+      <h2 id="modal-title">AI insights, instantly</h2>
+      <p class="lede">Find more stories on the topics that matter to you by searching on <a href="#">iA — our intelligent answers tool</a>. Ask multi-layered questions and even search directly for a competitor or brand you're tracking.</p>
+      <div class="ia-demo">
+        <div class="ia-bar"><span class="ia-mark">iA</span> Ask iA (beta)</div>
+        <p class="ia-label">Enter your question</p>
+        <div class="ia-field" id="ia-typed"><span class="caret"></span></div>
+        <div class="ia-answer" id="ia-answer">
+          <ul>
+            <li>Tesco holds volume share but Aldi leads growth in chilled ready meals.</li>
+            <li>Own-label premium tiers are the fastest-rising segment this quarter.</li>
+            <li>Three categories show white space for challenger brands.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="cta-row" style="margin-top:16px"><a class="cta" href="#">Try iA →</a></div>`,
+    behaviour:[
+      "Question types itself in on open, then the answer bullets fade in — replays each time the tip is opened.",
+      "Answer copy is illustrative only; ideally use a real cached iA response so the demo is honest.",
+      "Respect prefers-reduced-motion: show the full question and answer immediately with no typing."
+    ],
+    links:[
+      'CTA → tracked iA link from the brief: <code>t.marketing1.william-reed.com/r/?id=h3ce014e6,49821086,42e395e6</code>',
+      '<span class="q">Q:</span> should the CTA drop the user into iA with the demo question pre-filled?'
+    ]
+  },
+  {
+    n:2, tab:"2 · Category reports", title:"Category Reports",
+    html:`
+      <p class="eyebrow">Tip 2 of 7</p>
+      <h2 id="modal-title">Category Reports</h2>
+      <p class="lede">Track the latest trends with up-to-date and accurate industry data. Explore insights, existing ranges and new entrants to the market with our category intelligence.</p>
+      <div class="cards" id="rss-cards">
+        <span style="font-size:12px;color:var(--muted)">Loading reports…</span>
+      </div>
+      <div class="cta-row"><a class="cta" href="https://www.thegrocer.co.uk/category-reports">See all category reports</a></div>`,
+    behaviour:[
+      "Three most recent reports pulled live from the category reports feed, same furniture as the landing page: image, headline, publish date.",
+      "Whole card is the link, not just the headline — bigger target, and it matches landing-page behaviour.",
+      "Hover lifts the card (border + shadow) rather than enlarging it, so the grid doesn't reflow inside a fixed-height dialog.",
+      "Fallback if the feed is empty or slow: show the heading, copy and the 'see all' CTA only — never an empty grid."
+    ],
+    links:[
+      'Cards → individual report URLs from the feed. Landing page: <code>thegrocer.co.uk/category-reports</code>',
+      '<span class="q">Q:</span> the brief asks whether reports can enlarge on hover — the card-lift above is the safer version. Confirm which you want.',
+      '<span class="q">Q:</span> open report links in a new tab, or same tab and let the pop-up close?'
+    ]
+  },
+  {
+    n:3, tab:"3 · Ranking reports", title:"Ranking Reports",
+    html:`
+      <p class="eyebrow">Tip 3 of 7</p>
+      <h2 id="modal-title">Ranking Reports</h2>
+      <p class="lede">Who's leading the market? Explore the definitive rankings shaping the food and drink industry, from Britain's Biggest Brands to the Big 30 wholesalers.</p>
+      <div class="cards">
+        ${card("Ranking report","Placeholder: Britain's Biggest Brands","10 September 2026")}
+        ${card("Ranking report","Placeholder: Top Products Survey","3 September 2026")}
+        ${card("Ranking report","Placeholder: Big 30 Wholesalers","21 August 2026")}
+      </div>
+      <div class="cta-row"><a class="cta" href="https://www.thegrocer.co.uk/reports-and-data/rankings">See all rankings</a></div>`,
+    behaviour:[
+      "Same component as effort 2, different feed — build it once and pass in the source.",
+      "Brief lists Britain's Biggest Brands, Top Products, Winners & Losers, Top Campaigns, Risers & Fallers as examples only; the three shown should be whatever is most recent at display time.",
+      "If a flagship ranking should always appear regardless of date, that needs a pinned slot — not currently in the brief."
+    ],
+    links:[
+      'Cards → individual ranking URLs. Landing page: <code>thegrocer.co.uk/reports-and-data/rankings</code>',
+      '<span class="q">Q:</span> pin one hero ranking plus two most-recent, or purely most-recent three?'
+    ]
+  },
+  {
+    n:4, tab:"4 · App", title:"The Grocer App",
+    html:`
+      <p class="eyebrow">Tip 4 of 7</p>
+      <h2 id="modal-title">The Grocer App</h2>
+      <p class="lede">Tried the app yet? Get breaking news alerts, listen to audio summaries and catch up on essential stories wherever you are.</p>
+      <div class="two-col">
+        <div>
+          <div class="ph video">Video demo — app walkthrough<div class="play"></div></div>
+          <div class="thumbs">
+            <div class="ph">Alerts</div><div class="ph">Audio summaries</div><div class="ph">Offline reading</div>
+          </div>
+        </div>
+        <div>
+          <div class="phones">
+            <div class="ph phone">App screen 1</div>
+            <div class="ph phone">App screen 2</div>
+          </div>
+          <p style="font-size:12.5px;color:#555;margin:12px 0 4px"><b>Download here</b></p>
+          <div class="store-badges">
+            <a class="ph store-badge" href="https://apps.apple.com/gb/app/the-grocer-magazine/id601325692">App Store badge</a>
+            <a class="ph store-badge" href="https://play.google.com/store/apps/details?id=com.pagesuite.droid.thegrocer">Google Play badge</a>
+          </div>
+        </div>
+      </div>`,
+    behaviour:[
+      "Video is the primary; the three thumbnails below are the fallback carousel of help screens if no video demo exists.",
+      "Autoplay muted and looping, or click-to-play with a poster frame — autoplay with sound must not happen in a pop-up.",
+      "On mobile, serve the single relevant store badge by user agent and drop the phone mockups.",
+      "Clips can be reused from the new App video made for the support hub."
+    ],
+    links:[
+      'iOS: <code>apps.apple.com/gb/app/the-grocer-magazine/id601325692</code>',
+      'Android: <code>play.google.com/store/apps/details?id=com.pagesuite.droid.thegrocer</code>',
+      '<span class="q">Q:</span> is there a finished app demo video, or do we build the carousel from help screens?'
+    ]
+  },
+  {
+    n:5, tab:"5 · Price & promos", title:"Price &amp; Promotions Tracking",
+    html:`
+      <p class="eyebrow">Tip 5 of 7</p>
+      <h2 id="modal-title">Price &amp; Promotions Tracking</h2>
+      <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px">
+        <div class="ph g33">Grocer 33 logo</div>
+        <p class="lede" style="margin:0">Did you know you can track prices and promotions across the UK's biggest supermarkets? Track prices, promotions and customer experience — and see who's top of the league this week.</p>
+      </div>
+      <div class="two-col">
+        <div class="scroll-x">
+          <table class="league">
+            <thead><tr><th>This week</th><th>Retailer</th><th>Basket</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Placeholder retailer</td><td>£00.00</td></tr>
+              <tr><td>2</td><td>Placeholder retailer</td><td>£00.00</td></tr>
+              <tr><td>3</td><td>Placeholder retailer</td><td>£00.00</td></tr>
+            </tbody>
+          </table>
+          <div class="cta-row" style="margin-top:14px">
+            <a class="cta" href="https://www.thegrocer.co.uk/price-comparison-surveys/146.subject">See this week's winner</a>
+          </div>
+        </div>
+        <div>
+          <div class="ph" style="height:118px">KVI Tracker preview</div>
+          <p style="font-size:12.5px;color:#555;margin:10px 0 0"><b>KVI Tracker</b><br>Track weekly prices and promotions across key branded and own-label grocery products.</p>
+        </div>
+      </div>
+      <div class="flag"><b>Flagged in brief:</b> KVI Tracker is not working onsite at the moment. Either fix before launch or cut this half of the slide and run Grocer 33 full width.</div>`,
+    behaviour:[
+      "Live league table snippet is optional — if it can't be pulled reliably, replace with a static Grocer 33 image and the CTA.",
+      "Table must stay readable at 320px; it scrolls horizontally rather than shrinking type.",
+      "Alternative layout if KVI is cut: Grocer 33 logo left, copy and CTA right, no second column."
+    ],
+    links:[
+      'Grocer 33 / price comparison surveys: <code>thegrocer.co.uk/price-comparison-surveys/146.subject</code>',
+      '<span class="q">Q:</span> is KVI Tracker fixed for the 21 Aug live date, or does effort 5 ship Grocer 33 only?'
+    ]
+  },
+  {
+    n:6, tab:"6 · My account", title:"Manage My Account",
+    html:`
+      <p class="eyebrow">Tip 6 of 7</p>
+      <h2 id="modal-title">Manage My Account</h2>
+      <p class="lede">Update your details, manage your newsletters and check your subscription — all from one place.</p>
+      <div class="two-col">
+        <div class="ph video">Video still from the subscriber hub<div class="play"></div></div>
+        <div class="rows">
+          <a class="row" href="https://www.thegrocer.co.uk/subscriber-hub"><div class="ph">still</div><div><b>Update your details</b><span>Name, job title, company</span></div></a>
+          <a class="row" href="https://www.thegrocer.co.uk/subscriber-hub"><div class="ph">still</div><div><b>Manage newsletters</b><span>Choose what lands in your inbox</span></div></a>
+          <a class="row" href="https://www.thegrocer.co.uk/subscriber-hub"><div class="ph">still</div><div><b>Your subscription</b><span>Renewal date and plan</span></div></a>
+        </div>
+      </div>
+      <div class="cta-row" style="margin-top:16px"><a class="cta cta--dark" href="https://www.thegrocer.co.uk/subscriber-hub">Go to my account</a></div>
+      <div class="flag"><b>Note:</b> account pages are on the exclusion list, so this tip must not fire once the user is already on <code>account.thegrocer.co.uk</code>.</div>`,
+    behaviour:[
+      "Brief specifies a video still from the subscriber hub — the three rows are supporting detail and can be dropped if the still carries it alone.",
+      "Clicking through navigates away from the current page, so the pop-up should close and the effort mark as seen before the redirect."
+    ],
+    links:[
+      'Subscriber hub: <code>thegrocer.co.uk/subscriber-hub</code>',
+      '<span class="q">Q:</span> should this deep-link to specific account sections, or just land on the hub?'
+    ]
+  },
+  {
+    n:7, tab:"7 · Support centre", title:"Membership Support Centre",
+    html:`
+      <p class="eyebrow">Tip 7 of 7 — last one</p>
+      <h2 id="modal-title">Membership Support Centre</h2>
+      <p class="lede">Did you know there's a Support Centre? Discover videos, guides and tips to help you get more from your membership.</p>
+      <div class="rows">
+        <a class="row" href="https://www.thegrocer.co.uk/subscriber-hub"><div class="ph">video</div><div><b>Getting started</b><span>How-to video · 2 min</span></div></a>
+        <a class="row" href="https://www.thegrocer.co.uk/subscriber-hub"><div class="ph">video</div><div><b>Searching with iA</b><span>How-to video · 3 min</span></div></a>
+        <a class="row" href="https://www.thegrocer.co.uk/subscriber-hub"><div class="ph">video</div><div><b>Getting the most from reports</b><span>How-to video · 2 min</span></div></a>
+      </div>
+      <div class="cta-row" style="margin-top:16px">
+        <a class="cta" href="https://www.thegrocer.co.uk/subscriber-hub">Watch our how-to videos</a>
+      </div>`,
+    behaviour:[
+      "Final effort: the footer swaps 'Next' for 'Finish', and closing here ends the sequence rather than snoozing it.",
+      "Good place to offer a low-key 'show me these again' setting inside the account area, since the sequence is now spent."
+    ],
+    links:[
+      'Support centre / how-to videos: <code>thegrocer.co.uk/subscriber-hub</code>',
+      '<span class="q">Q:</span> is the support centre a distinct page from the subscriber hub? Brief points both efforts 6 and 7 at the same URL.'
+    ]
+  }
+];
+
+function card(kicker, headline, date, href){
+  const url = href || '#';
+  const ext = url !== '#';
+  return `<a class="card" href="${url}"${ext ? ' target="_blank" rel="noopener"' : ''}>
+    <div class="ph">Report cover image</div>
+    <div class="card__txt">
+      <span class="card__kicker">${kicker}</span>
+      <h3>${headline}</h3>
+      <time>${date}</time>
+    </div>
+  </a>`;
+}
+
+const $ = id => document.getElementById(id);
+let idx = 0;
+const seen = new Set([0]);
+let timers = [];
+
+function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+
+function typeDemo(){
+  const field = $('ia-typed'); if(!field) return;
+  const answer = $('ia-answer');
+  const text = 'Compare the UK\u2019s top supermarkets and highlight growth areas.';
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const items = answer.querySelectorAll('li');
+  if(reduce){
+    field.innerHTML = text;
+    items.forEach(li => li.classList.add('in'));
+    return;
+  }
+  let i = 0;
+  const step = () => {
+    field.innerHTML = '\u201C' + text.slice(0, i) + '\u201D<span class="caret"></span>';
+    if(i++ < text.length){ timers.push(setTimeout(step, 38)); }
+    else {
+      field.innerHTML = '\u201C' + text + '\u201D';
+      items.forEach((li, n) => timers.push(setTimeout(() => li.classList.add('in'), 260 * (n + 1))));
+    }
+  };
+  timers.push(setTimeout(step, 350));
+}
+
+function render(){
+  clearTimers();
+  const e = EFFORTS[idx];
+  seen.add(idx);
+  $('body').innerHTML = e.html;
+  $('body').scrollTop = 0;
+  $('counter').textContent = `${idx + 1} of 7`;
+  $('prev').disabled = idx === 0;
+  $('next').textContent = idx === EFFORTS.length - 1 ? 'Finish' : 'Next →';
+
+  $('dots').innerHTML = EFFORTS.map((x, i) =>
+    `<button class="dot ${seen.has(i) ? 'seen' : ''}" data-i="${i}" role="tab"
+      aria-current="${i === idx}" aria-label="Tip ${i + 1}: ${x.title.replace(/&amp;/g,'&')}"></button>`).join('');
+
+  $('notes-behaviour') && ($('notes-behaviour').innerHTML = e.behaviour.map(t => `<li>${t}</li>`).join(''));
+  $('notes-links') && ($('notes-links').innerHTML = e.links.map(t => `<li>${t}</li>`).join(''));
+
+  $('pill-count').textContent = EFFORTS.length - seen.size || '✓';
+  if(idx === 1) fillRSSCards(rssReports);
+  if(idx === 0) typeDemo();
+}
+
+function go(n){ idx = Math.max(0, Math.min(EFFORTS.length - 1, n)); render(); }
+function closeModal(){ clearTimers(); $('modal').hidden = true; $('pill').hidden = false; $('pill').focus(); }
+function openModal(){ $('modal').hidden = false; $('pill').hidden = true; fitModal(); $('close').focus(); }
+
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-i],[data-action],#prev,#next,#close,#pill,#scrim,#snooze,#optout');
+  if(!t) return;
+  if(t.dataset.i !== undefined){ go(+t.dataset.i); return; }
+  if(t.id === 'prev'){ go(idx - 1); return; }
+  if(t.id === 'next'){ idx === EFFORTS.length - 1 ? closeModal() : go(idx + 1); return; }
+  if(t.id === 'pill'){ openModal(); return; }
+  if(t.id === 'close' || t.id === 'scrim' || t.dataset.action === 'close' || t.dataset.action === 'finish'){ closeModal(); return; }
+  if(t.id === 'snooze' || t.id === 'optout'){
+    ev.preventDefault();
+    alert(t.id === 'snooze'
+      ? 'Wireframe: closes and re-queues this same effort for the next session — no effort is burned.'
+      : 'Wireframe: permanent opt-out. Suppresses all remaining efforts. Worth a confirmation step before it sticks.');
+    closeModal();
+  }
+});
+
+document.addEventListener('keydown', ev => {
+  if($('modal').hidden) return;
+  if(ev.key === 'Escape') closeModal();
+  if(ev.key === 'ArrowRight' && idx < EFFORTS.length - 1) go(idx + 1);
+  if(ev.key === 'ArrowLeft' && idx > 0) go(idx - 1);
+});
+
+/* ---- keep the pop-up clear of the masthead -------------------------------
+   Measured rather than hard-coded, so it still holds if the nav wraps to a
+   second line or the logo resizes. On the live site, point MASTHEAD at the
+   real header element(s) — including the sticky header if there is one.   */
+const MASTHEAD = ['.site__top', '.site__nav'];
+
+function measureMasthead(){
+  const h = MASTHEAD.reduce((sum, sel) => {
+    const el = document.querySelector(sel);
+    return sum + (el ? el.getBoundingClientRect().height : 0);
+  }, 0);
+  $('stage').style.setProperty('--masthead-h', h + 'px');
+}
+
+/* ---- lock the pop-up to a single height ---------------------------------
+   Renders all seven efforts off-screen, takes the tallest, and fixes the body
+   to that. Everything shorter pads out with white space, so Previous / Next
+   and the dots stay under the cursor when paging quickly.
+   Re-measured on resize because the tallest slide changes with width — the
+   three-up report grids stack on narrow screens, effort 4's two columns don't.
+   Capped to the space available below the masthead; if the window is too short
+   for the tallest slide, that slide scrolls internally instead.            */
+function fitModal(){
+  measureMasthead();
+  if($('modal').hidden) return;
+
+  const stage = $('stage');
+  const bodyEl = $('body');
+  const mast = parseFloat(getComputedStyle(stage).getPropertyValue('--masthead-h')) || 0;
+  const foot = document.querySelector('.modal__foot').getBoundingClientRect().height;
+
+  bodyEl.style.height = 'auto';
+  let tallest = 0;
+  EFFORTS.forEach(e => {
+    bodyEl.innerHTML = e.html;
+    tallest = Math.max(tallest, bodyEl.scrollHeight);
+  });
+  bodyEl.style.height = '';
+
+  const available = Math.max(240, stage.clientHeight - mast - 40 - foot);
+  $('modal').style.setProperty('--body-h', Math.min(tallest, available) + 'px');
+  render();
+}
+
+let fitTimer;
+const refit = () => { clearTimeout(fitTimer); fitTimer = setTimeout(fitModal, 150); };
+
+render();
+fitModal();
+/* webfonts change metrics, so measure again once they've settled */
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitModal);
+
+/* pre-fetch RSS so cards are ready when the user reaches slide 2 */
+fetchCategoryReports().then(reports => {
+  rssReports = reports;
+  if(idx === 1) fillRSSCards(reports);
+});
+
+window.addEventListener('resize', refit);
+if(window.ResizeObserver){
+  const ro = new ResizeObserver(refit);
+  MASTHEAD.forEach(sel => { const el = document.querySelector(sel); if(el) ro.observe(el); });
+}
+</script>
+</body>
+</html>
