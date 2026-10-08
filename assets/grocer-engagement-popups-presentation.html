@@ -343,38 +343,27 @@ const RSS_FALLBACK = [
     date:'30 September 2023' }
 ];
 
-function parseRSSText(text){
-  const xml = new DOMParser().parseFromString(text, 'text/xml');
-  const items = [...xml.getElementsByTagName('item')].slice(0, 3);
-  return items.map(item => {
-    const get = tag => item.getElementsByTagName(tag)[0]?.textContent?.trim() || '';
-    const d = new Date(get('pubDate'));
-    return {
-      title: get('title'),
-      link: get('link') || '#',
-      date: isNaN(d) ? '' : d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'})
-    };
-  });
-}
-
 async function fetchCategoryReports(){
-  /* file:// gives a null origin that CORS proxies reject — skip straight to fallback */
+  /* file:// gives a null origin — skip straight to fallback */
   if(location.protocol === 'file:') return RSS_FALLBACK;
 
   const FEED = 'https://www.thegrocer.co.uk/35916.rss';
-  const PROXIES = [
-    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-    url => 'https://corsproxy.io/?' + encodeURIComponent(url),
-  ];
-  for(const proxy of PROXIES){
-    try {
-      const res = await fetch(proxy(FEED));
-      if(!res.ok) continue;
-      const items = parseRSSText(await res.text());
-      if(items.length) return items;
-    } catch(e) { /* try next */ }
+  try {
+    const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(FEED));
+    if(!res.ok) throw new Error();
+    const data = await res.json();
+    if(data.status !== 'ok' || !data.items?.length) throw new Error();
+    return data.items.slice(0, 3).map(item => {
+      const d = new Date(item.pubDate);
+      return {
+        title: item.title,
+        link: item.link,
+        date: isNaN(d) ? '' : d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'})
+      };
+    });
+  } catch(e) {
+    return RSS_FALLBACK;
   }
-  return RSS_FALLBACK;
 }
 
 function fillRSSCards(reports){
